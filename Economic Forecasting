@@ -1,0 +1,71 @@
+#https://www.rba.gov.au/publications/rdp/2003/2003-12/results.html
+#RBA using random walk for economic forecasting
+
+rm(list=ls())
+
+# random walk function
+RW <- function(N, x0, mu, stdev) {
+  z<-cumsum(rnorm(n=N, mean=0, sd=stdev))
+  t<-1:N
+  x<-x0+t*mu+z
+  return(x)
+}
+
+# parameters
+N <- 100 # number of simulations
+n <- 100 # number of forecasting years
+start <- 0 #starting inflation rate
+vol <- 1 #stdev
+upper <- 12 # highest rate is 12
+rate_premium <- 1.8 #avg diff between cash rate and inflation
+inf_sims <- c() #empty inflation simulation matrix
+rate_sims <- c()
+rf1_sims <- c()
+rf10_sims <- c()
+
+# inflation simulation
+for (x in 1:N) {
+  inf_sim <- RW(n, start, 0, vol)
+  while (any(inf_sim<0) | any(inf_sim>15)) {
+    inf_sim[which(inf_sim < 0)] <- -inf_sim[which(inf_sim <0)] # bounce to positive if it goes to 0
+    inf_sim[which(inf_sim > upper)+1] <- upper-(inf_sim[which(inf_sim >upper)]-upper)*0.8 #drag down next inflation when meet upper threshold
+  }
+  inf_sims <- rbind(inf_sims, inf_sim[1:100])
+}
+
+#plot(rowMeans(sims))
+#plot(P1, type='l')
+
+# cash rate simulation
+for (x in 1:N) {
+  inf_sim <- inf_sims[x,]
+  rate_sim <- inf_sim + rate_premium
+  rate_sim <- rate_sim + rnorm(100, 0, 1)
+  rate_sims <- rbind(rate_sims, rate_sim)
+}
+
+# 1yr risk free rate simulation
+for (x in 1:N) {
+  rate_sim <- rate_sims[x,]
+  rate_jumps <- diff(rate_sim)
+  rf1_sim <- rate_sim + rnorm(100, 0, 0.5) # lower volatility between spread of rf1 and cash rate, means are very similar
+  rf1_sim[which(rate_jumps > 2)+1] <- rate_sim[which(rate_jumps > 2)+1] - runif(length(which(rate_jumps > 2)), 0, 1.5)
+  rf1_sims <- rbind(rf1_sims, rf1_sim)
+}
+
+# 10yr risk free rate simulation
+for (x in 1:N) {
+  rf1_sim <- rf1_sims[x,]
+  rate_jumps <- diff(rate_sims[x,])
+  rf10_sim <- rf1_sim + rnorm(100, 1, 0.05) # lower volatility between spread of rf1 and rf10, mean of rf10 roughly 1% higher
+  rf10_sim[which(rate_jumps > 2)+1] <- rf1_sim[which(rate_jumps > 2)+1] - runif(length(which(rate_jumps > 2)), 0, 0.8)
+  rf10_sims <- rbind(rf10_sims, rf10_sim)
+}
+
+#check
+x=runif(1, 1, 100)
+plot(inf_sims[x,], type='l', ylim=c(0, 15))
+lines(rate_sims[x,], col='blue')
+lines(rf1_sims[x,], col="green")
+lines(rf10_sims[x,], col="red")
+
