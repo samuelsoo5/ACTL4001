@@ -2,6 +2,7 @@
 #RBA using random walk for economic forecasting
 
 rm(list=ls())
+library(write_xlsx)
 
 # random walk function
 RW <- function(N, x0, mu, stdev) {
@@ -69,3 +70,18 @@ lines(rate_sims[x,], col='blue')
 lines(rf1_sims[x,], col="green")
 lines(rf10_sims[x,], col="red")
 
+#export dataset
+row_names <- paste0("SIM", c(1:100))
+col_names <- c("", paste0("Y", c(1:100)))
+
+inf_sims_df <- as.data.frame(cbind(row_names, inf_sims))
+colnames(inf_sims_df) <- col_names
+rate_sims_df <- as.data.frame(cbind(row_names, rate_sims))
+colnames(rate_sims_df) <- col_names
+rf1_sims_df <- as.data.frame(cbind(row_names, rf1_sims))
+colnames(rf1_sims_df) <- col_names
+rf10_sims_df <- as.data.frame(cbind(row_names, rf10_sims))
+colnames(rf10_sims_df) <- col_names
+
+l <- list("inflation" = inf_sims_df, "cash_rate" = rate_sims_df, "rf1"= rf1_sims_df, "rf10" = rf10_sims_df)
+write_xlsx(l,   "economic_simulations.xlsx")
