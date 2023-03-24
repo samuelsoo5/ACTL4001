@@ -1,0 +1,110 @@
+#### FATALITIES AND INJURIES ####
+
+# Loading packages
+library(data.table)
+library(ggplot2)
+library(fitdistrplus)
+library(actuar)
+library(gridExtra)
+library(dplyr)
+
+
+hd <- fread("C:/Users/Brian/OneDrive/Documents/ACTL 4001/Hazard data.csv")
+hd$Region <- as.factor(hd$Region)
+
+### EDA: Injuries vs Severity
+
+plot(hd$Injuries, hd$PropertyDamage)
+
+  #Outliers: injuries > 3000, low property damage. Damage > 6 billion, 0 injuries
+
+hd <- data.table(hd)
+hd[Injuries > 3000,] # Hurricane REGION 5
+hd[PropertyDamage > 6000000000, ] # Hurricane REGION 2
+
+hd_no_outlier <- hd[Injuries < 3000 & PropertyDamage < 6000000000, ]
+  
+
+hd.lm <- lm(Injuries ~ PropertyDamage/1000000 + as.factor(Region), data = hd_no_outlie)
+hd.lm
+
+# Seems too difficult to fit a model, too many 0s
+
+# Average Fatalities + Injuries per year for each region:
+
+averageperregion <- data.table(hd %>%
+  group_by(Year, Region) %>%
+  summarise(avg_inj = mean(Injuries),
+            avg_fat = mean(Fatalities),
+            avg_dam = mean(PropertyDamage)/1000000))
+
+ggplot(data = averageperregion[Region == 6,]) + geom_line(aes(x = Year, y = avg_inj, color = 'injury')) +
+  geom_line(aes(x = Year, y = avg_dam, color = 'damage'))
+
+# Compare overall injuries vs overall damage
+
+average_total <- data.table(hd %>%
+                              group_by(Year) %>%
+                              summarise(avg_inj = mean(Injuries),
+                                        avg_fat = mean(Fatalities),
+                                        avg_dam = mean(PropertyDamage)/1000000))
+
+ggplot(data = average_total) + geom_line(aes(x = Year, y = avg_inj, color = 'injury')) +
+  geom_line(aes(x = Year, y = avg_dam, color = 'damage'))
+
+  # Seems to be little trend, only for the huge accidents. 
+
+
+# Threshold Setting
+
+total_threshold <- 40000000
+region_threshold <- c(30000000, 30000000, 30000000, 30000000, 25000000, 0)
+
+hd <- hd %>%
+  mutate(Sev_indicator = case_when(
+    PropertyDamage > total_threshold ~ 'high', 
+    TRUE ~ 'low'
+  ))
+
+# Fitting linear regression model with indicator
+
+hd.fit <- lm(Injuries ~ Sev_indicator + Region, data = hd)
+summary(hd.fit)
+
+ggplot(data = hd) + geom_boxplot(aes(x = Sev_indicator, y = Injuries))
+
+
+### Three tiers: 0-20000000, 20000000-1000000000, 100000000+
+
+threshold_low <- 20000000
+threshold_med <- 1000000000
+
+
+hd <- hd %>%
+  mutate(Sev_indicator2 = case_when(
+    PropertyDamage > threshold_med ~ 'high', 
+    PropertyDamage > threshold_low ~ 'med',
+    TRUE ~ 'low'
+  ))
+ggplot(data = hd) + geom_boxplot(aes(x = Sev_indicator2, y = Injuries))
+
+
+threshold_1 <- 1000000
+threshold_2 <- 10000000
+threshold_3 <- 100000000
+threshold_4 <- 1000000000
+
+
+hd <- hd %>%
+  mutate(Sev_indicator3 = case_when(
+    PropertyDamage > threshold_4 ~ '5', 
+    PropertyDamage > threshold_3 ~ '4',
+    PropertyDamage > threshold_2 ~ '3',
+    PropertyDamage > threshold_1 ~ '2', 
+    TRUE ~ '1'
+  ))
+ggplot(data = hd) + geom_boxplot(aes(x = Sev_indicator3, y = Injuries))
+
+
+hd.fit2 <- lm(Injuries ~ HazardEventGrouped, data = hd)
+summary(hd.fit2)
