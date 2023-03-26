@@ -47,12 +47,12 @@ su3 =  "https://raw.githubusercontent.com/samuelsoo5/ACTL4001/main/Simulated%20v
 sfreak =   "https://raw.githubusercontent.com/samuelsoo5/ACTL4001/main/Simulated%20values/Severity_Upper_Region_0.csv"
 
 
-Regions <- c(1,2,3,4,5,6,1,2,3,4,5,6,1,2,3)
-Severity <- c("L", "L","L", "L","L", "L","M", "M","M", "M","M", "M", "U", "U", "U")
+Regions <- c(1,2,3,4,5,6,1,2,3,4,5,6,1,2,3, "total")
+Severity <- c("L", "L","L", "L","L", "L","M", "M","M", "M","M", "M", "U", "U", "U", "F")
 
 # freq tables
 dt_list_f <- list()
-csv_urls <- c(fl1,fl2,fl3,fl4,fl5,fl6,fm1,fm2,fm3,fm4,fm5,fm6,fu1,fu2,fu3)
+csv_urls <- c(fl1,fl2,fl3,fl4,fl5,fl6,fm1,fm2,fm3,fm4,fm5,fm6,fu1,fu2,fu3, ffreak)
 
 for (url in csv_urls) {
   dt <- fread(url)[c(1:1000), c(-1, -81)]
@@ -62,12 +62,10 @@ for (url in csv_urls) {
 }
 
 
-ffreak <- fread(ffreak)[c(1:1000), c(-1, -81)]
-
 
 # severity Tables
 dt_list_s <- list()
-csv_urls <- c(sl1,sl2,sl3,sl4,sl5,sl6,sm1,sm2,sm3,sm4,sm5,sm6,su1,su2,su3)
+csv_urls <- c(sl1,sl2,sl3,sl4,sl5,sl6,sm1,sm2,sm3,sm4,sm5,sm6,su1,su2,su3, sfreak)
 
 for (url in csv_urls) {
   dt <- fread(url)[c(1:1000), c(-1, -81)]
@@ -77,7 +75,6 @@ for (url in csv_urls) {
 }
 
 
-sfreak <- t(fread(sfreak)[c(1:1000), c(-1, -81)])
 
 
 # Import Baseline Information
@@ -88,17 +85,17 @@ scenarionames <- c("SSP1", "SSP2", "SSP3", "SSP4")
 
 baseline <- fread("C:/Users/Brian/OneDrive/Documents/ACTL 4001/Baselineinformation.csv")
 baseline <- baseline[, GDPperCapita := GDP2020_1000*1000/Population]
-recovery <- data.table(Severity = c("L", "M", "U"),
-                       time_noprg = c(1/12, 1/2, 1),
-                       time_prg = c(1/24, 1/4, 1/2))
+recovery <- data.table(Severity = c("L", "M", "U", "F"),
+                       time_noprg = c(1/12, 1/2, 1, 2),
+                       time_prg = c(1/24, 1/4, 1/2, 1.5))
 voluntary <- c(0.20, 0.1,0.15,0.25,0.3)
 fatality <- 0.5727
 injury <- 2.046
 medianage <- c(31,37)
 medianfood <- 3.54*1.321
 retirement <- 65
-rebuild_multi <- data.table(Severity = c("L", "M", "U"),
-                            multiplier = c(1,1.15,1.3))
+rebuild_multi <- data.table(Severity = c("L", "M", "U", "F"),
+                            multiplier = c(1,1.25,1.5, 1.5))
 replacing <- c(0.4,0.75)
 
 inflation <- fread("C:/Users/Brian/OneDrive/Documents/ACTL 4001/inflation.csv")
@@ -141,7 +138,6 @@ for(s in 1:4){
   # Recovery Times without Program
   rec_pro <- recovery[, c("Severity", "time_noprg")]
   
-  # Loop through each region and severity level
   
   #total_cost <- data.table(matrix(ncol = 6, nrow = 0, dimnames = list(NULL, c("Year", "GDP", "Total Property Damage", "Total Economic Cost", "Total Injuries", "Total Fatalities"))))
   total_cost <- rep(0, each = 80)
@@ -149,6 +145,7 @@ for(s in 1:4){
   total_inj <- rep(0, each = 80)
   total_fat <- rep(0, each = 80)
   
+  # Loop through each region and severity level
   for(i in 1:length(dt_list_f)){
     dtf <- dt_list_f[[i]]
     dts <- dt_list_s[[i]]
@@ -216,6 +213,7 @@ for(s in 1:4){
     total_fat <- total_fat + total$fatalities
   }
   
+  
   aggregate <- data.table(Year = seq(2021,2100,1),
                           GDP = totalGDP*g,
                           TotalPropertyDamage = total_damage,
@@ -228,5 +226,25 @@ for(s in 1:4){
   
 }
 
-plot(scenario_list[[1]]$Year, scenario_list[[1]]$TotalEconomicCost)
+
+
+# Scenario 1
+ggplot(data = scenario_list[[1]]) +
+  geom_line(aes(x = Year, y = TotalEconomicCost, color = "Economic Cost")) +
+  geom_line(aes(x = Year, y = TotalPropertyDamage, color = "Property Damage")) +  geom_line(aes(x = Year, y = GDP*100, color = "GDP"))
+
+# Scenario 2
+ggplot(data = scenario_list[[2]]) +
+  geom_line(aes(x = Year, y = TotalEconomicCost, color = "Economic Cost")) +
+  geom_line(aes(x = Year, y = TotalPropertyDamage, color = "Property Damage")) # +  geom_line(aes(x = Year, y = GDP*100, color = "GDP"))
+
+# Scenario 3
+ggplot(data = scenario_list[[3]]) +
+  geom_line(aes(x = Year, y = TotalEconomicCost, color = "Economic Cost")) +
+  geom_line(aes(x = Year, y = TotalPropertyDamage, color = "Property Damage")) # +  geom_line(aes(x = Year, y = GDP*100, color = "GDP"))
+
+# Scenario 4
+ggplot(data = scenario_list[[4]]) +
+  geom_line(aes(x = Year, y = TotalEconomicCost, color = "Economic Cost")) +
+  geom_line(aes(x = Year, y = TotalPropertyDamage, color = "Property Damage")) # +  geom_line(aes(x = Year, y = GDP*100, color = "GDP"))
 
