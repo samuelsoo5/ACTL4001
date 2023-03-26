@@ -148,10 +148,7 @@ for(s in 1:4){
   
   
   #total_cost <- data.table(matrix(ncol = 6, nrow = 0, dimnames = list(NULL, c("Year", "GDP", "Total Property Damage", "Total Economic Cost", "Total Injuries", "Total Fatalities"))))
-  total_cost <- rep(0, each = 80)
-  total_damage <- rep(0, each = 80)
-  total_inj <- rep(0, each = 80)
-  total_fat <- rep(0, each = 80)
+  
   
   # Loop for simulations
   
@@ -165,7 +162,10 @@ for(s in 1:4){
   
   for(sim in 1:1000){
     print(sim)
-    
+    total_cost <- rep(0, each = 80)
+    total_damage <- rep(0, each = 80)
+    total_inj <- rep(0, each = 80)
+    total_fat <- rep(0, each = 80)
     # Loop through each region and severity level
     for(i in 1:length(dt_list_f)){
       
@@ -247,6 +247,8 @@ for(s in 1:4){
                           TotalFat = total_fat)
   
   aggregate_table <- rbind(aggregate_table, aggregate)
+  
+  total_cost <- 0 
    
   
   }
@@ -257,10 +259,10 @@ for(s in 1:4){
   
 }
 
-
+View(scenario_list[[1]])
 
 # Scenario 1
-ggplot(data = scenario_list[[1]]) +
+ggplot(data = scenario_list[[1]][Sim_No == 167,]) +
   geom_line(aes(x = Year, y = TotalEconomicCost, color = "Economic Cost")) +
   geom_line(aes(x = Year, y = TotalPropertyDamage, color = "Property Damage")) +  geom_line(aes(x = Year, y = GDP*100, color = "GDP"))
 
@@ -286,7 +288,6 @@ ggplot(data = scenario_list[[4]]) +
 ###########################################
 
 # Economic Cost Modelling - With Program
-
 
 ###########################################
 
