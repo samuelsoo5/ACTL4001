@@ -216,7 +216,13 @@ freak_data <- freak_hazards <- hd[Key %in% c("H2828", "H2827", "W3232",
                                              "F2702", "F2737","F2738", "F2741", "F2746", "F2756",
                                              "H810", "H811", "H812", "H813", "H814")]
 
-freak_data <- freak_data[, .N, .(Year)]
+  # Aggregating so each freak accident is treated as one event
+
+freak_data[, Freak_Key := paste0(substr(Key, 1, 1), Year)]
+
+freak_hazard_grouped <- freak_data[, .(N = 1), .(Freak_Key, Year)]
+
+freak_hazard_grouped <- freak_hazard_grouped[, .(N, Year)]
 
 # Creating frequency tables
 
@@ -224,7 +230,7 @@ region_freq <- data.table(Year = 0, N = 0)
 
 region_base <- data.table(Year = seq(1960, 2020))
   
-region_specific <- merge(region_base, freak_data, by = c("Year"), all.x = T)
+region_specific <- merge(region_base, freak_hazard_grouped, by = c("Year"), all.x = T)
   
 region_freq <- rbind(region_freq, region_specific)
   
@@ -238,17 +244,17 @@ dispersion_test <- data.table(pvalue = 0)
 
 hazard_data_freak <- region_freq[, N]
   
-dispersion_test <- rbind(dispersion_test, data.table(pvalue = poisdisp.test(hazard_data_freak, alternative = "over", logged = FALSE)[2]))
+dispersion_test <- rbind(dispersion_test, data.table(pvalue = poisdisp.test(hazard_data_freak, alternative = "under", logged = FALSE)[2]))
   
 #View(dispersion_test)
 
-# Fitting negative binomial models to count data
+# Fitting poisson model to count data
 
 #pdf("C:/Users/PC/Documents/Uni/4001/Analysis/Nbinom_region_freak.pdf")
 
-nb_params_freak <- data.table(Region = "test", Size = 0, Mu = 0)
+pois_params_freak <- data.table(Region = 0, Lambda = 0)
 
-titleplot <- ggplot() + ggtitle(paste0("Region ",i)) + 
+titleplot <- ggplot() + ggtitle(paste0("Freak")) + 
   theme_void() + theme(plot.title = element_text(size = 20, vjust = -35, hjust = 0.5))
 print(titleplot)
 
@@ -256,15 +262,15 @@ hazard_data_freak<- region_freq[, N]
   
 if (sum(hazard_data_freak) > 0) {
   
-  hazard_nb <- fitdist(hazard_data_freak, "nbinom", method = "mle")
+  hazard_pois <- fitdist(hazard_data_freak, "pois", method = "mle")
   
-  plot(hazard_nb)
+  plot(hazard_pois)
   
-  nb_params_freak <- rbind(nb_params_freak, data.table(Region = i, Size = hazard_nb$estimate[1], Mu = hazard_nb$estimate[2]))
+  pois_params_freak <- rbind(pois_params_freak, data.table(Region = 0, Lambda = hazard_pois$estimate[1]))
 
 }
 
-nb_params_freak <- nb_params_freak[-1]
+pois_params_freak <- pois_params_freak[-1]
 
 #dev.off()
 

@@ -209,7 +209,7 @@ for (j in unique(pois_params_upper[, Region])){
   # Mapping these probabilities to observations
   
   sim_values_upper_freq<- matrix(sapply(upper_rand_freq, qpois, lambda = pois_params_upper[Region == j, Lambda]),
-                                  nrow = no_sims)
+                                 nrow = no_sims)
   
   # Binding these columns to a matrix
   
@@ -217,19 +217,49 @@ for (j in unique(pois_params_upper[, Region])){
   
   for (i in 1:no_years) {
     
-    dt_mid_freq <- cbind(dt_mid_freq, sim_values_middle_freq[, i])
+    dt_upper_freq <- cbind(dt_upper_freq, sim_values_upper_freq[, i])
     
   }
   
   # Setting column names
   
-  colnames(dt_mid_freq) <- c("Index", paste(seq(2020,2100), sep = " "))
+  colnames(dt_upper_freq) <- c("Index", paste(seq(2020,2100), sep = " "))
   
   # Saving file
   
-  fwrite(dt_mid_freq, paste0("C:/Users/PC/Documents/GitHub/ACTL4001/Simulated values/Frequency_Lower_Region_",j,".csv"))
+  fwrite(dt_upper_freq, paste0("C:/Users/PC/Documents/GitHub/ACTL4001/Simulated values/Frequency_Upper_Region_",j,".csv"))
   
 }
+
+#### Simulating freak distribution frequencies ####
+
+# Creating random matrix for probabilities
+
+freak_rand_freq <- matrix(runif(no_years*no_sims), nrow = no_sims)
+
+# Mapping these probabilities to observations
+
+sim_values_freak_freq <- matrix(sapply(freak_rand_freq, qpois, lambda = pois_params_freak[, Lambda]),
+                               nrow = no_sims)
+
+# Binding these columns to a matrix
+
+dt_freak_freq <- data.table(Index = seq(1, no_sims))
+
+for (i in 1:no_years) {
+  
+  dt_freak_freq <- cbind(dt_freak_freq, sim_values_freak_freq[, i])
+  
+}
+
+# Setting column names
+
+colnames(dt_freak_freq) <- c("Index", paste(seq(2020,2100), sep = " "))
+
+# Saving file
+
+fwrite(dt_freak_freq, paste0("C:/Users/PC/Documents/GitHub/ACTL4001/Simulated values/Frequency_Freak",".csv"))
+
 
 
 
